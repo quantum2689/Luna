@@ -1,5 +1,17 @@
 import numpy as np
 
+
+# ---- config (same values as your hyperparameters; torch/device removed since NumPy is CPU only) ----
+batch_size = 64      # independent sequences processed in parallel
+block_size = 256     # maximum context length
+n_embd = 384
+n_head = 6
+n_layer = 6
+dropout = 0.2
+vocab_size = 65      # e.g. char-level tiny Shakespeare; set to your tokenizer size
+#---------------
+
+
 ## self attention
 #soft max
 def softmax(x, axis=-1):
