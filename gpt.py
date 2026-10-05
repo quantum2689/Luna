@@ -1,12 +1,13 @@
 import numpy as np
 
-
+## self attention
+#soft max
 def softmax(x, axis=-1):
     x = x - np.max(x, axis=axis, keepdims=True)  # numerical stability
     e = np.exp(x)
     return e / np.sum(e, axis=axis, keepdims=True)
 
-
+# self-attention
 def self_attention(wq,wk,wv,x):
     # coumpute query-key-value
     q = np.dot(wq,x)
@@ -27,3 +28,16 @@ def self_attention(wq,wk,wv,x):
 
     # value coumputed
     return weights@ v
+
+# relu activation function
+
+def relu(z):    
+    return np.maximum(0, z)
+
+# mlp
+
+def mlp_layer(w,b,x):
+    z = np.dot(x,w) + b
+
+    return relu(z)
+
