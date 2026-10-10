@@ -40,7 +40,7 @@ class Head:
         causal = np.tril(np.ones((T, T), dtype=bool))
         score = np.where(causal, score, -np.inf)
 
-        score = np.dot(score,v)
+        score = softmax(score) @ v
         return score
 
 x = rng.standard_normal((2, 5, 16))
