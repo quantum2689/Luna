@@ -48,4 +48,17 @@ head = Head(n_embd=16, head_size=8)
 print(head.forward(x)) 
 
 
+class MultiHeadAttention:
+    def __init__(self, n_embd, n_heads):
+        head_size = n_embd // n_heads
+        self.heads = [Head(n_embd, head_size) for _ in range(n_heads)]
+        self.wo = rng.standard_normal((n_embd, n_embd)) * 0.02
 
+    def forward(self, x):
+        outs = [h.forward(x) for h in self.heads]   # each (B, T, head_size)
+        out = np.concatenate(outs, axis=-1)         # (B, T, n_embd)
+        return out @ self.wo                        # (B, T, n_embd)
+
+x = rng.standard_normal((2, 5, 16))
+mha = MultiHeadAttention(n_embd=16, n_heads=4)
+print(mha.forward(x))
