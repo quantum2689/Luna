@@ -1,5 +1,5 @@
 import numpy as np
-
+from tokenizer import stoi , vocab_size
 
 # ---- config (same values as your hyperparameters; torch/device removed since NumPy is CPU only) ----
 batch_size = 64      # independent sequences processed in parallel
@@ -12,6 +12,15 @@ vocab_size = 65      # e.g. char-level tiny Shakespeare; set to your tokenizer s
 head_size = 2
 
 rng = np.random.default_rng()
+
+# Embedding and postional encoding
+class Embedding:
+    def __init__(self):
+        self.embedding_matrix = rng.standard_normal((vocab_size,n_embd))
+        self.pe = np.load("postional_encoding_embd.npy")
+    def forward(self,x):
+        return self.embedding_matrix[x] + self.pe[:len(x)]
+
 
 #soft max
 def softmax(x, axis=-1):
