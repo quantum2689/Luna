@@ -1,3 +1,5 @@
+#  This tokenizer is from Andrej Karpathy's code on GitHub on https://github.com/karpathy/ng-video-lecture
+
 with open('input.txt', 'r', encoding='utf-8') as f:
     text = f.read()
 
