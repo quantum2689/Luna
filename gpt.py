@@ -62,3 +62,28 @@ class MultiHeadAttention:
 x = rng.standard_normal((2, 5, 16))
 mha = MultiHeadAttention(n_embd=16, n_heads=4)
 print(mha.forward(x))
+
+# FeedFoward network
+# n_embd -
+class FeedFoward:
+    def __init__(self,n_embd):
+        self.w1 = rng.standard_normal((n_embd, 4*n_embd))
+        self.b1 = rng.standard_normal(4*n_embd)
+
+        self.w2 = rng.standard_normal((4*n_embd, n_embd))
+        self.b2 = rng.standard_normal((n_embd))
+    def relu(self,x):
+        return np.maximum(0,x)
+    def forward(self,x):
+        # first layer
+        y = x @ self.w1 + self.b1
+        y = self.relu(y)
+
+        # second layer
+        z = y @ self.w2 + self.b2
+
+        return z
+
+x = rng.standard_normal((n_embd))
+net = FeedFoward(n_embd=n_embd)
+print(net.forward(x))
