@@ -10,7 +10,7 @@ n_layer = 6
 dropout = 0.2
 vocab_size = 65      # e.g. char-level tiny Shakespeare; set to your tokenizer size
 head_size = 2
-dropout = 0.2
+
 
 rng = np.random.default_rng()
 
@@ -29,6 +29,21 @@ def softmax(x, axis=-1):
     e = np.exp(x)
     return e / np.sum(e, axis=axis, keepdims=True)
 
+# Dropout
+class Dropout:
+    def __init__(self,p,training):
+        self.p = p
+        self.training = training
+    def forward(self,x):
+        if not self.training or self.p == 0.0:
+            return x
+        else:
+            mask = (rng.random(x.shape) >= self.p) / (1.0 - self.p)
+            return x * mask
+
+d = Dropout(dropout,True)
+x = rng.standard_normal((2,5,n_embd))
+d.forward(x)
 
 # self-attention
 
