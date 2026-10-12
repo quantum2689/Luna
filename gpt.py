@@ -10,6 +10,7 @@ n_layer = 6
 dropout = 0.2
 vocab_size = 65      # e.g. char-level tiny Shakespeare; set to your tokenizer size
 head_size = 2
+dropout = 0.2
 
 rng = np.random.default_rng()
 
@@ -19,7 +20,7 @@ class Embedding:
         self.embedding_matrix = rng.standard_normal((vocab_size,n_embd))*0.02
         self.pe = np.load("postional_encoding_embd.npy")
     def forward(self,x):
-        return self.embedding_matrix[x] + self.pe[-1]
+        return self.embedding_matrix[x] + self.pe[x.shape[-1]]
 
 
 #soft max
@@ -36,13 +37,13 @@ class Head:
 
         self.head_size = head_size
         self.wq = rng.standard_normal((n_embd,head_size)) * 0.02
-        self.wk = rng.random((n_embd,head_size)) * 0.02
-        self.wV = rng.random((n_embd,head_size)) * 0.02
+        self.wk = rng.standard_normal((n_embd,head_size)) * 0.02
+        self.wV = rng.standard_normal((n_embd,head_size)) * 0.02
     def forward(self ,x):
         B,T,C = x.shape
         q = np.matmul(x,self.wq)
         k = np.matmul(x,self.wk)
-        v = np.matmul(x,self.wk)
+        v = np.matmul(x,self.wV)
 
         score = q@k.swapaxes(-2, -1)/np.sqrt(self.head_size)
 
@@ -77,8 +78,8 @@ print(mha.forward(x))
 class LayerNorm:
     def __init__(self, n_embd):
         self.eps = 1e-5
-        self.beta = rng.standard_normal((n_embd))
-        self.gamma = rng.standard_normal((n_embd))
+        self.beta = np.zeros((n_embd))
+        self.gamma = np.ones((n_embd))
     def forward(self,x):
         mean = x.mean(axis=-1, keepdims=True)
         var = x.var(axis=-1, keepdims=True)
