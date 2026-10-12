@@ -48,12 +48,14 @@ d.forward(x)
 # self-attention
 
 class Head:
-    def __init__(self, n_embd, head_size):
+    def __init__(self, n_embd, head_size,traning):
 
         self.head_size = head_size
         self.wq = rng.standard_normal((n_embd,head_size)) * 0.02
         self.wk = rng.standard_normal((n_embd,head_size)) * 0.02
         self.wV = rng.standard_normal((n_embd,head_size)) * 0.02
+
+        self.dropout = Dropout(dropout,traning)
     def forward(self ,x):
         B,T,C = x.shape
         q = np.matmul(x,self.wq)
@@ -65,18 +67,19 @@ class Head:
         causal = np.tril(np.ones((T, T), dtype=bool))
         score = np.where(causal, score, -np.inf)
 
-        score = softmax(score) @ v
-        return score
+        score = softmax(score)
+        score = self.dropout.forward(score)
+        return score @ v
 
 x = rng.standard_normal((2, 5, 16))
-head = Head(n_embd=16, head_size=8)
+head = Head(n_embd=16, head_size=8,traning=True)
 print(head.forward(x)) 
 
 
 class MultiHeadAttention:
-    def __init__(self, n_embd, n_heads):
+    def __init__(self, n_embd, n_heads,training):
         head_size = n_embd // n_heads
-        self.heads = [Head(n_embd, head_size) for _ in range(n_heads)]
+        self.heads = [Head(n_embd, head_size,traning=training) for _ in range(n_heads)]
         self.wo = rng.standard_normal((n_embd, n_embd)) * 0.02
 
     def forward(self, x):
@@ -85,7 +88,7 @@ class MultiHeadAttention:
         return out @ self.wo                        # (B, T, n_embd)
 
 x = rng.standard_normal((2, 5, 16))
-mha = MultiHeadAttention(n_embd=16, n_heads=4)
+mha = MultiHeadAttention(n_embd=16, n_heads=4,training=True)
 print(mha.forward(x))
 
 # layer Norm
@@ -108,12 +111,15 @@ print(LayerNorm(n_embd).forward(x))
 # FeedFoward network
 # n_embd -
 class FeedFoward:
-    def __init__(self,n_embd):
+    def __init__(self,n_embd,training):
         self.w1 = rng.standard_normal((n_embd, 4*n_embd))
         self.b1 = rng.standard_normal(4*n_embd)
 
         self.w2 = rng.standard_normal((4*n_embd, n_embd))
         self.b2 = rng.standard_normal((n_embd))
+
+        self.dropout = Dropout(dropout,training)
+
     def relu(self,x):
         return np.maximum(0,x)
     def forward(self,x):
@@ -123,19 +129,20 @@ class FeedFoward:
 
         # second layer
         z = y @ self.w2 + self.b2
+        z = self.dropout.forward(z)
 
         return z
 
 x = rng.standard_normal((n_embd))
-net = FeedFoward(n_embd=n_embd)
+net = FeedFoward(n_embd=n_embd,training=True)
 print(net.forward(x))
 
 # transfoermer block
 class block:
-    def __init__(self,n_embd, n_head):
+    def __init__(self,n_embd, n_head,training):
         head_size = n_embd // n_head
-        self.ma = MultiHeadAttention(n_embd,head_size)
-        self.ffwd = FeedFoward(n_embd)
+        self.ma = MultiHeadAttention(n_embd,head_size,training=training)
+        self.ffwd = FeedFoward(n_embd,training=training)
         self.ln1 = LayerNorm((n_embd))
         self.ln2 = LayerNorm((n_embd))
     def forward(self,x):
@@ -146,5 +153,5 @@ class block:
 
     
 x = rng.standard_normal((2,5,n_embd))
-B = block(n_embd,n_head)
+B = block(n_embd,n_head,training=True)
 print(B.forward(x))
