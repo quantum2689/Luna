@@ -1,5 +1,5 @@
 import numpy as np
-from tokenizer import stoi , vocab_size
+
 
 # ---- config (same values as your hyperparameters; torch/device removed since NumPy is CPU only) ----
 batch_size = 64      # independent sequences processed in parallel
@@ -41,9 +41,9 @@ class Dropout:
             mask = (rng.random(x.shape) >= self.p) / (1.0 - self.p)
             return x * mask
 
-d = Dropout(dropout,True)
-x = rng.standard_normal((2,5,n_embd))
-d.forward(x)
+#d = Dropout(dropout,True)
+#x = rng.standard_normal((2,5,n_embd))
+#d.forward(x)
 
 # self-attention
 
@@ -71,9 +71,9 @@ class Head:
         score = self.dropout.forward(score)
         return score @ v
 
-x = rng.standard_normal((2, 5, 16))
-head = Head(n_embd=16, head_size=8,traning=True)
-print(head.forward(x)) 
+#x = rng.standard_normal((2, 5, 16))
+#head = Head(n_embd=16, head_size=8,traning=True)
+#print(head.forward(x)) 
 
 
 class MultiHeadAttention:
@@ -87,9 +87,9 @@ class MultiHeadAttention:
         out = np.concatenate(outs, axis=-1)         # (B, T, n_embd)
         return out @ self.wo                        # (B, T, n_embd)
 
-x = rng.standard_normal((2, 5, 16))
-mha = MultiHeadAttention(n_embd=16, n_heads=4,training=True)
-print(mha.forward(x))
+#x = rng.standard_normal((2, 5, 16))
+#mha = MultiHeadAttention(n_embd=16, n_heads=4,training=True)
+#print(mha.forward(x))
 
 # layer Norm
 
@@ -105,8 +105,8 @@ class LayerNorm:
         norm = (x - mean) / np.sqrt(var + self.eps)
         return self.gamma * norm + self.beta
 
-x = rng.standard_normal((n_embd))
-print(LayerNorm(n_embd).forward(x))   
+#x = rng.standard_normal((n_embd))
+#print(LayerNorm(n_embd).forward(x))   
 
 # FeedFoward network
 # n_embd -
@@ -133,9 +133,9 @@ class FeedFoward:
 
         return z
 
-x = rng.standard_normal((n_embd))
-net = FeedFoward(n_embd=n_embd,training=True)
-print(net.forward(x))
+#x = rng.standard_normal((n_embd))
+#net = FeedFoward(n_embd=n_embd,training=True)
+#print(net.forward(x))
 
 # transfoermer block
 class Block:
@@ -152,9 +152,9 @@ class Block:
         return x   
 
     
-x = rng.standard_normal((2,5,n_embd))
-B = Block(n_embd,n_head,training=True)
-print(B.forward(x))
+#x = rng.standard_normal((2,5,n_embd))
+#B = Block(n_embd,n_head,training=True)
+#print(B.forward(x))
 
 # logits linear
 
@@ -180,7 +180,7 @@ class GPT:
 
         return logits
 
-model = GPT(vocab_size=vocab_size, n_embd=n_embd, n_head=n_head, n_layer=n_layer,training=True)
-ids = rng.integers(0, 65, size=(2, 5))
-logits = model.forward(ids)
-print(logits.shape)   # (2, 5, 65)
+#model = GPT(vocab_size=vocab_size, n_embd=n_embd, n_head=n_head, n_layer=n_layer,training=True)
+#ids = rng.integers(0, 65, size=(2, 5))
+#logits = model.forward(ids)
+#print(logits.shape)   # (2, 5, 65)
