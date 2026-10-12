@@ -16,7 +16,7 @@ rng = np.random.default_rng()
 
 # Embedding and postional encoding
 class Embedding:
-    def __init__(self):
+    def __init__(self,vocab_size,n_embd):
         self.embedding_matrix = rng.standard_normal((vocab_size,n_embd))*0.02
         self.pe = np.load("postional_encoding_embd.npy")
     def forward(self,x):
@@ -138,7 +138,7 @@ net = FeedFoward(n_embd=n_embd,training=True)
 print(net.forward(x))
 
 # transfoermer block
-class block:
+class Block:
     def __init__(self,n_embd, n_head,training):
         head_size = n_embd // n_head
         self.ma = MultiHeadAttention(n_embd,head_size,training=training)
@@ -153,5 +153,34 @@ class block:
 
     
 x = rng.standard_normal((2,5,n_embd))
-B = block(n_embd,n_head,training=True)
+B = Block(n_embd,n_head,training=True)
 print(B.forward(x))
+
+# logits linear
+
+class Lm_head:
+    def __init__(self,n_embd, vocab_size):
+        self.lm = rng.standard_normal((n_embd,vocab_size))*0.02
+    def forward(self,x):
+        return x @ self.lm
+
+# GPT
+
+class GPT:
+    def __init__(self,vocab_size,n_embd,n_head,n_layer,training):
+        self.embedding = Embedding(vocab_size=vocab_size,n_embd=n_embd)
+        self.blocks = [Block(n_embd=n_embd,n_head=n_head,training=training) for _ in range(n_layer)]
+        self.lm_head = Lm_head(n_embd=n_embd,vocab_size=vocab_size)
+
+    def forward(self,x):
+        x = self.embedding.forward(x)
+        for block in self.blocks:
+            x = block.forward(x)
+        logits = self.lm_head.forward(x)
+
+        return logits
+
+model = GPT(vocab_size=vocab_size, n_embd=n_embd, n_head=n_head, n_layer=n_layer,training=True)
+ids = rng.integers(0, 65, size=(2, 5))
+logits = model.forward(ids)
+print(logits.shape)   # (2, 5, 65)
