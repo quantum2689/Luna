@@ -16,10 +16,10 @@ rng = np.random.default_rng()
 # Embedding and postional encoding
 class Embedding:
     def __init__(self):
-        self.embedding_matrix = rng.standard_normal((vocab_size,n_embd))
+        self.embedding_matrix = rng.standard_normal((vocab_size,n_embd))*0.02
         self.pe = np.load("postional_encoding_embd.npy")
     def forward(self,x):
-        return self.embedding_matrix[x] + self.pe.shape[-1]
+        return self.embedding_matrix[x] + self.pe[-1]
 
 
 #soft max
@@ -75,7 +75,7 @@ print(mha.forward(x))
 # layer Norm
 
 class LayerNorm:
-    def __init__(self):
+    def __init__(self, n_embd):
         self.eps = 1e-5
         self.beta = rng.standard_normal((n_embd))
         self.gamma = rng.standard_normal((n_embd))
@@ -87,7 +87,7 @@ class LayerNorm:
         return self.gamma * norm + self.beta
 
 x = rng.standard_normal((n_embd))
-print(LayerNorm().forward(x))   
+print(LayerNorm(n_embd).forward(x))   
 
 # FeedFoward network
 # n_embd -
@@ -113,3 +113,22 @@ class FeedFoward:
 x = rng.standard_normal((n_embd))
 net = FeedFoward(n_embd=n_embd)
 print(net.forward(x))
+
+# transfoermer block
+class block:
+    def __init__(self,n_embd, n_head):
+        head_size = n_embd // n_head
+        self.ma = MultiHeadAttention(n_embd,head_size)
+        self.ffwd = FeedFoward(n_embd)
+        self.ln1 = LayerNorm((n_embd))
+        self.ln2 = LayerNorm((n_embd))
+    def forward(self,x):
+        x = x + self.ma.forward(self.ln1.forward(x))
+        x = x + self.ffwd.forward(self.ln2.forward(x))
+
+        return x   
+
+    
+x = rng.standard_normal((2,5,n_embd))
+B = block(n_embd,n_head)
+print(B.forward(x))
