@@ -19,7 +19,7 @@ class Embedding:
         self.embedding_matrix = rng.standard_normal((vocab_size,n_embd))
         self.pe = np.load("postional_encoding_embd.npy")
     def forward(self,x):
-        return self.embedding_matrix[x] + self.pe[:len(x)]
+        return self.embedding_matrix[x] + self.pe.shape[-1]
 
 
 #soft max
@@ -35,9 +35,9 @@ class Head:
     def __init__(self, n_embd, head_size):
 
         self.head_size = head_size
-        self.wq = rng.standard_normal((n_embd,head_size))
-        self.wk = rng.random((n_embd,head_size))
-        self.wV = rng.random((n_embd,head_size))
+        self.wq = rng.standard_normal((n_embd,head_size)) * 0.02
+        self.wk = rng.random((n_embd,head_size)) * 0.02
+        self.wV = rng.random((n_embd,head_size)) * 0.02
     def forward(self ,x):
         B,T,C = x.shape
         q = np.matmul(x,self.wq)
@@ -80,7 +80,7 @@ class LayerNorm:
         self.beta = rng.standard_normal((n_embd))
         self.gamma = rng.standard_normal((n_embd))
     def forward(self,x):
-        mean = x.mean()
+        mean = x.mean(axis=-1, keepdims=True)
         var = x.var(axis=-1, keepdims=True)
 
         norm = (x - mean) / np.sqrt(var + self.eps)
