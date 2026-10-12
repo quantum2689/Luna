@@ -72,6 +72,23 @@ x = rng.standard_normal((2, 5, 16))
 mha = MultiHeadAttention(n_embd=16, n_heads=4)
 print(mha.forward(x))
 
+# layer Norm
+
+class LayerNorm:
+    def __init__(self):
+        self.eps = 1e-5
+        self.beta = rng.standard_normal((n_embd))
+        self.gamma = rng.standard_normal((n_embd))
+    def forward(self,x):
+        mean = x.mean()
+        var = x.var(axis=-1, keepdims=True)
+
+        norm = (x - mean) / np.sqrt(var + self.eps)
+        return self.gamma * norm + self.beta
+
+x = rng.standard_normal((n_embd))
+print(LayerNorm().forward(x))   
+
 # FeedFoward network
 # n_embd -
 class FeedFoward:
