@@ -51,29 +51,61 @@ def compute_loss(logits, targets):
 
 
 
-def update_weights(model, lr):
-    # Embedding & LM Head
-    model.embedding.embedding_matrix -= lr * model.embedding.dE
-    model.lm_head.lm                 -= lr * model.lm_head.dlm
-    # Transformer Blocks
-    for block in model.blocks:
-        # Feed-forward network
-        block.ffwd.w1 -= lr * block.ffwd.dw1
-        block.ffwd.b1 -= lr * block.ffwd.db1
-        block.ffwd.w2 -= lr * block.ffwd.dw2
-        block.ffwd.b2 -= lr * block.ffwd.db2
-        # Attention projection
-        block.ma.wo   -= lr * block.ma.dwo
-        # Individual attention heads
-        for head in block.ma.heads:
-            head.wq -= lr * head.dwq
-            head.wk -= lr * head.dwk
-            head.wV -= lr * head.dwV
-        # Layer norms
-        block.ln1.gamma -= lr * block.ln1.dgamma
-        block.ln1.beta  -= lr * block.ln1.dbeta
-        block.ln2.gamma -= lr * block.ln2.dgamma
-        block.ln2.beta  -= lr * block.ln2.dbeta
+class AdamW:
+    def __init__(self, lr=3e-4, beta1=0.9, beta2=0.999, eps=1e-8, weight_decay=1e-2):
+        self.lr = lr
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.eps = eps
+        self.weight_decay = weight_decay
+        self.m = {}
+        self.v = {}
+        self.t = 0
+
+    def step(self, model):
+        self.t += 1
+        # Bias-corrected learning rate
+        lr_t = self.lr * np.sqrt(1.0 - self.beta2 ** self.t) / (1.0 - self.beta1 ** self.t)
+
+        # Collect all parameters: (key, param_array, grad_array, is_weight)
+        params = [
+            ("emb", model.embedding.embedding_matrix, model.embedding.dE, True),
+            ("lm", model.lm_head.lm, model.lm_head.dlm, True),
+        ]
+        for i, b in enumerate(model.blocks):
+            params += [
+                (f"b{i}_w1", b.ffwd.w1, b.ffwd.dw1, True),
+                (f"b{i}_b1", b.ffwd.b1, b.ffwd.db1, False),
+                (f"b{i}_w2", b.ffwd.w2, b.ffwd.dw2, True),
+                (f"b{i}_b2", b.ffwd.b2, b.ffwd.db2, False),
+                (f"b{i}_wo", b.ma.wo, b.ma.dwo, True),
+                (f"b{i}_ln1_g", b.ln1.gamma, b.ln1.dgamma, False),
+                (f"b{i}_ln1_b", b.ln1.beta, b.ln1.dbeta, False),
+                (f"b{i}_ln2_g", b.ln2.gamma, b.ln2.dgamma, False),
+                (f"b{i}_ln2_b", b.ln2.beta, b.ln2.dbeta, False),
+            ]
+            for j, h in enumerate(b.ma.heads):
+                params += [
+                    (f"b{i}_h{j}_wq", h.wq, h.dwq, True),
+                    (f"b{i}_h{j}_wk", h.wk, h.dwk, True),
+                    (f"b{i}_h{j}_wv", h.wV, h.dwV, True),
+                ]
+
+        for key, p, g, is_weight in params:
+            if key not in self.m:
+                self.m[key] = np.zeros_like(p)
+                self.v[key] = np.zeros_like(p)
+
+            # Update biased 1st and 2nd moment estimates
+            self.m[key] = self.beta1 * self.m[key] + (1.0 - self.beta1) * g
+            self.v[key] = self.beta2 * self.v[key] + (1.0 - self.beta2) * (g ** 2)
+
+            # Decoupled weight decay (AdamW) - applied to weights, not biases/norms
+            if is_weight and self.weight_decay > 0:
+                p -= self.lr * self.weight_decay * p
+
+            # Adam update step
+            p -= lr_t * self.m[key] / (np.sqrt(self.v[key]) + self.eps)
 
 def save_model(model, folder="model"):
     os.makedirs(folder, exist_ok=True)
@@ -100,6 +132,8 @@ def save_model(model, folder="model"):
     np.savez(filepath, **weights)
     print(f"\nModel weights saved to {filepath}")
 
+optimizer = AdamW(lr=learning_rate)
+
 for step in range(num_steps):
     X, Y = get_batch("train")
     # A. Forward pass
@@ -108,8 +142,8 @@ for step in range(num_steps):
     loss, dlogits = compute_loss(logits, Y)
     # C. Backward pass (calculates .dw1, .dwq, etc.)
     model.backward(dlogits)
-    # D. Update weights directly
-    update_weights(model, learning_rate)
+    # D. Update weights with AdamW
+    optimizer.step(model)
     if step % 10 == 0 or step == num_steps - 1:
         print(f"Step {step} | Loss: {loss:.4f}")
 
